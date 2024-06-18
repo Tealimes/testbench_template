@@ -4,45 +4,53 @@
 //`include "" //input file here
 `define TESTAMOUNT 10 //change for number of bitstreams tested
 
+//used to check erors
 class errorcheck;
     real uResult;
     real eResult;
-    real num;
-    real cntA;
-    real cntB;
-    real denom;
-    real sum;
+    real fnum;
+    real cntrA;
+    real cntrB;
+    real fdenom;
+    real asum;
     real mse;
     real rmse;
+    static int i;
 
-    function new(real iA, iB, denom, num, sum);
-        cntA = iA;
-        cntB = iB;
-        this.denom = denom;
-        this.num = num;
-        this.sum = sum;
+    function new();
+        asum = 0;
+        i = 0;
+    endfunction
 
+    function addi(real A, B, denom, num);
+        cntrA = A;
+        cntrB = B;
+        fdenom = denom;
+        fnum = num;
+        i++;
     endfunction 
 
-    function fSUM(sum);
-        uResult = (num/denom);
-        //eResult = change equation here;
+    function fSUM();
+        $display("Run %.0f results: ", i); 
+        uResult = (fnum/fdenom);
+       // eResult = CHANGE VALUE TO SPECIFIC RESULT
 
-        $display("uResult = %f", uResult);
-        //$display("eResult = %f", eResult); //uncomment when eResult changed 
+        $display("uResult = %.9f", uResult);
+        $display("eResult = %.9f", eResult); 
 
-        this.sum = sum + ((uResult - eResult) * (uResult - eResult));
-        return sum + ((uResult - eResult) * (uResult - eResult));
+        asum = asum + ((uResult - eResult) * (uResult - eResult));
+        $display("sum: %.9f", asum);
     endfunction
 
     function fMSE();
-        mse = sum / `TESTAMOUNT;
-        $display("mse: %f", mse);
+        $display("Final Results: "); 
+        mse = asum / `TESTAMOUNT;
+        $display("mse: %.9f", mse);
     endfunction
 
     function fRMSE();
         rmse = $sqrt(mse);
-        $display("rmse: %f", rmse);
+        $display("rmse: %.9f", rmse);
     endfunction
 
 endclass
@@ -59,12 +67,11 @@ module CHANGENAME();
     logic oC;
     
     
-    errorcheck error;
+    errorcheck error; //class for error checking
     real num; //counts output's 1s
     real cntA; //counts As
     real cntB; //counts Bs
     real denom; //denominator
-    real sum; //used for mse and rmse
 
     //calculates end result
     always@(posedge iClk or negedge iRstN) begin
@@ -106,7 +113,7 @@ module CHANGENAME();
     end
     always@(posedge iClk or negedge iRstN) begin
         if(~iRstN) begin
-            cntA <= 0;
+            cntB <= 0;
         end else begin
             if(~iClr) begin 
                     cntB <= cntB + iB;
@@ -171,13 +178,17 @@ module CHANGENAME();
         iRstN = 0;
         iClr = 0;
         loadB = 1;
-        sum = 0;
+        error = new;
 
         #10;
         iRstN = 1;
 
         //specified cycles of unary bitstreams
         repeat(`TESTAMOUNT) begin
+            num = 0;
+            denom = 0;
+            cntA = 0;
+            cntB = 0;
             rand_A = $urandom_range(255);
             rand_B = $urandom_range(255);
 
@@ -187,10 +198,11 @@ module CHANGENAME();
                 iB = (iB_buff > sobolseq_tbB);
             end
 
-            error = new(iA, iB, denom, num, sum);
-            sum = error.fSUM(sum);
+            error.addi(cntA, cntB, denom, num);
+            error.fSUM();
         end
 
+        //gives final error results
         error.fMSE();
         error.fRMSE();
 
