@@ -1,3 +1,6 @@
+//By Alexander Peacock
+//email: alexpeacock56ten@gmail.com
+
 //Can replace all instances of CHANGENAME to appropriate name
 `timescale 1ns/1ns
 `include "sobolrng.v"
@@ -63,7 +66,6 @@ module CHANGENAME();
     logic iA;
     logic iB;
     logic iClr;
-    logic loadB;
     logic oC;
     
     
@@ -139,21 +141,6 @@ module CHANGENAME();
         .sobolseq(sobolseq_tbA)
     );
 
-    reg [BITWIDTH-1:0] iB_buff;
-
-    always@(posedge iClk or negedge iRstN) begin
-        if(~iRstN) begin
-            iB_buff <= 0;
-        end else begin
-            if(loadB) begin
-                iB_buff <= rand_B;
-            end else begin
-                iB_buff <= iB_buff;
-            end
-            
-        end
-    end
-
     sobolrng #(
         .BITWIDTH(BITWIDTH)
     ) u_sobolrng_tbB (
@@ -177,7 +164,6 @@ module CHANGENAME();
         rand_B = 0;
         iRstN = 0;
         iClr = 0;
-        loadB = 1;
         error = new;
 
         #10;
@@ -195,7 +181,7 @@ module CHANGENAME();
             repeat(256) begin
                 #10;
                 iA = (rand_A > sobolseq_tbA);
-                iB = (iB_buff > sobolseq_tbB);
+                iB = (rand_B > sobolseq_tbB);
             end
 
             error.addi(cntA, cntB, denom, num);
