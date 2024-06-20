@@ -18,23 +18,34 @@ class errorcheck;
     real asum;
     real mse;
     real rmse;
-    static int i;
+    static int j;
 
     function new();
         asum = 0;
-        i = 0;
+        cntrA = 0;
+        cntrB = 0;
+        fnum = 0;
+        fdenom = 0;
+        j = 0;
     endfunction
 
-    function addi(real A, B, denom, num);
-        cntrA = A;
-        cntrB = B;
-        fdenom = denom;
-        fnum = num;
-        i++;
+    //accumulates to account for bitstreams
+    function count(real a, b, outC);
+        cntrA = cntrA + a;
+        cntrB = cntrB + b;
+        fnum = fnum + outC;
+        fdenom++;
     endfunction 
 
+    
     function fSUM();
-        $display("Run %.0f results: ", i); 
+        j++; //counts current run
+
+        $display("Run %.0f results: ", j);
+        $display("numerator = %.0f", fnum);
+        $display("denom = %.0f", fdenom);
+        $display("Number of A's = %.0f", cntrA);
+        $display("Number of B's = %.0f", cntrB);
         uResult = (fnum/fdenom);
        // eResult = CHANGE VALUE TO SPECIFIC RESULT
 
@@ -43,6 +54,12 @@ class errorcheck;
 
         asum = asum + ((uResult - eResult) * (uResult - eResult));
         $display("sum: %.9f", asum);
+
+        //resets for next bitstreams
+        cntrA = 0;
+        cntrB = 0;
+        fnum = 0;
+        fdenom = 0;
     endfunction
 
     function fMSE();
@@ -68,68 +85,43 @@ module CHANGENAME();
     logic iClr;
     logic oC;
     
-    
     errorcheck error; //class for error checking
-    real num; //counts output's 1s
-    real cntA; //counts As
-    real cntB; //counts Bs
-    real denom; //denominator
-
-    //calculates end result
-    always@(posedge iClk or negedge iRstN) begin
-        if(~iRstN) begin
-            num <= 0;
-        end else begin
-            if(~iClr) begin 
-                num <= num + oC;
-            end else begin
-                num <= 0;
-            end
-        end
-    end
-
-    //calculates denominator
-    always@(posedge iClk or negedge iRstN) begin
-        if(~iRstN) begin
-            denom <= 0;
-        end else begin
-            if(~iClr) begin 
-                denom <= denom + 1;
-            end else begin
-                denom <= 0;
-            end
-        end
-    end
-
-    //Counts 1 in As and Bs
-    always@(posedge iClk or negedge iRstN) begin
-        if(~iRstN) begin
-            cntA <= 0;
-        end else begin
-            if(~iClr) begin 
-                cntA <= cntA + iA;
-            end else begin 
-                cntA <= 0;
-            end
-        end
-    end
-    always@(posedge iClk or negedge iRstN) begin
-        if(~iRstN) begin
-            cntB <= 0;
-        end else begin
-            if(~iClr) begin 
-                    cntB <= cntB + iB;
-            end else begin 
-                cntB <= 0;
-            end
-        end
-    end
 
     //used for bitstream generation
     logic [BITWIDTH-1:0] sobolseq_tbA;
     logic [BITWIDTH-1:0] sobolseq_tbB;
     logic [BITWIDTH-1:0] rand_A;
     logic [BITWIDTH-1:0] rand_B;
+
+    // This code is used to delay the expected output
+    parameter PPCYCLE = 1;
+
+    // dont change code below
+    logic result [PPCYCLE-1:0];
+    logic result_expected;
+    assign result_expected = oC;
+
+    genvar i;
+    generate
+        for (i = 1; i < PPCYCLE; i = i + 1) begin
+            always@(posedge iClk or negedge iRstN) begin
+                if (~iRstN) begin
+                    result[i] <= 0;
+                end else begin
+                    result[i] <= result[i-1];
+                end
+            end
+        end
+    endgenerate
+
+    always@(posedge iClk or negedge iRstN) begin
+        if (~iRstN) begin
+            result[0] <= 0;
+        end else begin
+            result[0] <= result_expected;
+        end
+    end
+    // end here
 
     sobolrng #(
         .BITWIDTH(BITWIDTH)
@@ -153,7 +145,6 @@ module CHANGENAME();
 
     always #5 iClk = ~iClk; //defines the clock
 
-
     initial begin 
         $dumpfile("CHANGENAME.vcd"); $dumpvars;
 
@@ -171,10 +162,6 @@ module CHANGENAME();
 
         //specified cycles of unary bitstreams
         repeat(`TESTAMOUNT) begin
-            num = 0;
-            denom = 0;
-            cntA = 0;
-            cntB = 0;
             rand_A = $urandom_range(255);
             rand_B = $urandom_range(255);
 
@@ -182,9 +169,10 @@ module CHANGENAME();
                 #10;
                 iA = (rand_A > sobolseq_tbA);
                 iB = (rand_B > sobolseq_tbB);
+                error.count(iA, iB, result[PPCYCLE-1]);
+
             end
 
-            error.addi(cntA, cntB, denom, num);
             error.fSUM();
         end
 
