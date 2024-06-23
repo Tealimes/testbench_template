@@ -37,15 +37,15 @@ class errorcheck;
         fdenom++;
     endfunction 
 
-    
+    //sums the results of a bitstream cycle
     function fSUM();
         j++; //counts current run
 
         $display("Run %.0f results: ", j);
-        $display("numerator = %.0f", fnum);
-        $display("denom = %.0f", fdenom);
-        $display("Number of A's = %.0f", cntrA);
-        $display("Number of B's = %.0f", cntrB);
+        $display("Number of 1s output = %.0f", fnum);
+        $display("Bits in bitstream = %.0f", fdenom);
+        $display("Number of 1s in A = %.0f", cntrA);
+        $display("Number of 1s in B = %.0f", cntrB);
         uResult = (fnum/fdenom);
        // eResult = CHANGE VALUE TO SPECIFIC RESULT
 
@@ -54,6 +54,7 @@ class errorcheck;
 
         asum = asum + ((uResult - eResult) * (uResult - eResult));
         $display("sum: %.9f", asum);
+        $display("");
 
         //resets for next bitstreams
         cntrA = 0;
@@ -62,12 +63,14 @@ class errorcheck;
         fdenom = 0;
     endfunction
 
+    //mean squared error
     function fMSE();
         $display("Final Results: "); 
         mse = asum / `TESTAMOUNT;
         $display("mse: %.9f", mse);
     endfunction
 
+    //root mean square error
     function fRMSE();
         rmse = $sqrt(mse);
         $display("rmse: %.9f", rmse);
@@ -123,6 +126,7 @@ module CHANGENAME();
     end
     // end here
 
+    //generates two stochastic bitstreams
     sobolrng #(
         .BITWIDTH(BITWIDTH)
     ) u_sobolrng_tbA (
