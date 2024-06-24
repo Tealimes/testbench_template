@@ -1,4 +1,4 @@
-//By Alexander Peacock
+//By Alexander Peacock, undergrad at UCF ECE
 //email: alexpeacock56ten@gmail.com
 
 //Can replace all instances of CHANGENAME to appropriate name
@@ -41,19 +41,19 @@ class errorcheck;
     function fSUM();
         j++; //counts current run
 
-        $display("Run %.0f results: ", j);
-        $display("Number of 1s output = %.0f", fnum);
-        $display("Bits in bitstream = %.0f", fdenom);
-        $display("Number of 1s in A = %.0f", cntrA);
-        $display("Number of 1s in B = %.0f", cntrB);
+        $display("Run <%.0f>: ", j);
+        $display("Length of bitstream = %.0f", fdenom);
+        $display("Number of 1s in output = %.0f", fnum);
+        $display("Number of 1s in input A = %.0f", cntrA);
+        $display("Number of 1s in input B = %.0f", cntrB);
         uResult = (fnum/fdenom);
        // eResult = CHANGE VALUE TO SPECIFIC RESULT
 
-        $display("uResult = %.9f", uResult);
-        $display("eResult = %.9f", eResult); 
+        $display("Unary result = %.9f", uResult);
+        $display("Expected result = %.9f", eResult); 
 
         asum = asum + ((uResult - eResult) * (uResult - eResult));
-        $display("sum: %.9f", asum);
+        $display("Cumulated square error = %.9f", asum);
         $display("");
 
         //resets for next bitstreams
@@ -174,7 +174,6 @@ module CHANGENAME();
                 iA = (rand_A > sobolseq_tbA);
                 iB = (rand_B > sobolseq_tbB);
                 error.count(iA, iB, result[PPCYCLE-1]);
-
             end
 
             error.fSUM();
